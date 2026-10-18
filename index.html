@@ -126,6 +126,28 @@ textarea { min-height: 64px; resize: vertical; }
 .link.danger { color: #d0453a; font-weight: 700; }
 .empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1px dashed var(--line); border-radius: 6px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* recipe picker */
+.group { display: flex; flex-direction: column; gap: 8px; }
+.group h2 { font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin: 4px 0 0; }
+.recipes { display: flex; flex-direction: column; gap: 8px; }
+.recipe { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid transparent; border-radius: 6px; padding: 12px 14px; cursor: pointer; }
+.recipe:hover { border-color: var(--line); }
+.recipe .shop { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+.recipe .name { font-weight: 700; font-size: 15px; grid-column: 1; }
+.recipe .spec { font-family: var(--font-num); font-size: 12px; color: var(--muted); grid-column: 1; font-variant-numeric: tabular-nums; }
+.recipe .go { grid-column: 2; grid-row: 1 / span 3; color: var(--accent); font-size: 18px; }
+.badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
+
+/* timer view header */
+.backbar { display: flex; align-items: center; gap: 10px; }
+.back { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 14px; padding: 4px 0; cursor: pointer; }
+.rtitle { display: flex; flex-direction: column; gap: 2px; }
+.rtitle .shop { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+.rtitle h2 { font-size: 20px; margin: 0; text-wrap: balance; }
+.rtitle .sub { font-size: 12px; color: var(--muted); }
+.source { font-size: 12px; color: var(--muted); }
+.source a { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -138,58 +160,44 @@ textarea { min-height: 64px; resize: vertical; }
     </div>
   </header>
 
-  <section id="view-brew" style="display:flex;flex-direction:column;gap:16px">
+  <!-- 1. レシピを選ぶ -->
+  <section id="view-pick" style="display:flex;flex-direction:column;gap:14px">
+    <div class="seg" id="serve">
+      <button data-v="hot" aria-pressed="true">ホット</button>
+      <button data-v="iced" aria-pressed="false">アイス</button>
+    </div>
+    <div class="group">
+      <h2>お店・バリスタのレシピ</h2>
+      <div class="recipes" id="list-shop"></div>
+    </div>
+    <div class="group">
+      <h2>Daily Brew の定番（1:16）</h2>
+      <div class="recipes" id="list-house"></div>
+    </div>
+  </section>
+
+  <!-- 2. タイマー -->
+  <section id="view-brew" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="backbar"><button class="back" id="back">‹ レシピを選ぶ</button></div>
+    <div class="rtitle">
+      <span class="shop" id="r-shop"></span>
+      <h2 id="r-name"></h2>
+      <span class="sub" id="r-sub"></span>
+    </div>
+
     <div class="panel">
       <div class="settings">
-        <div class="field full">
-          <span class="label">ホット / アイス</span>
-          <div class="seg" id="serve">
-            <button data-v="hot" aria-pressed="true">ホット</button>
-            <button data-v="iced" aria-pressed="false">アイス（急冷）</button>
-          </div>
-        </div>
-        <div class="field full">
-          <span class="label">抽出方法</span>
-          <div class="seg" id="method">
-            <button data-v="46" aria-pressed="true">透過式 4:6</button>
-            <button data-v="immersion" aria-pressed="false">浸漬式</button>
-            <button data-v="hybrid" aria-pressed="false">ハイブリッド</button>
-          </div>
-        </div>
         <div class="field">
           <label class="label" for="bean-in">豆</label>
           <div class="stepper"><button id="bean-minus" aria-label="豆を減らす">−</button><input id="bean-in" type="number" inputmode="decimal" min="5" max="60" step="0.5" value="20"><span class="unit">g</span><button id="bean-plus" aria-label="豆を増やす">＋</button></div>
         </div>
         <div class="field">
           <span class="label" id="water-label">湯量</span>
-          <div class="readout" id="water-out">320 g<small>1:16</small></div>
-        </div>
-        <div class="field" data-for="46">
-          <span class="label">味</span>
-          <div class="seg" id="taste">
-            <button data-v="sweet" aria-pressed="false">甘め</button>
-            <button data-v="std" aria-pressed="true">標準</button>
-            <button data-v="bright" aria-pressed="false">明るめ</button>
-          </div>
-        </div>
-        <div class="field" data-for="46">
-          <span class="label">濃さ</span>
-          <div class="seg" id="strength">
-            <button data-v="2" aria-pressed="false">軽め</button>
-            <button data-v="3" aria-pressed="true">標準</button>
-            <button data-v="4" aria-pressed="false">濃いめ</button>
-          </div>
-        </div>
-        <div class="field full" data-for="immersion">
-          <span class="label">浸漬時間</span>
-          <div class="seg" id="steep">
-            <button data-v="180" aria-pressed="false">3分</button>
-            <button data-v="240" aria-pressed="true">4分</button>
-            <button data-v="300" aria-pressed="false">5分</button>
-          </div>
+          <div class="readout" id="water-out"></div>
         </div>
       </div>
-      <p class="hint" id="method-hint"></p>
+      <p class="hint" id="r-hint"></p>
+      <p class="source" id="r-source"></p>
     </div>
 
     <div class="panel">
@@ -220,7 +228,7 @@ textarea { min-height: 64px; resize: vertical; }
         <div class="row2">
           <div class="field"><label class="label" for="f-roast">焙煎</label>
             <select id="f-roast"><option>浅煎り</option><option selected>中煎り</option><option>中深煎り</option><option>深煎り</option></select></div>
-          <div class="field"><label class="label" for="f-temp">湯温 ℃</label><input class="plain" type="number" id="f-temp" value="92" inputmode="numeric" min="70" max="100"></div>
+          <div class="field"><label class="label" for="f-temp">湯温 ℃</label><input class="plain" type="number" id="f-temp" value="92" inputmode="numeric" min="60" max="100"></div>
         </div>
         <div class="field"><label class="label" for="f-grind">挽き目（ミルの目盛りなど）</label><input type="text" id="f-grind" placeholder="例：中細挽き / コマンダンテ 24クリック"></div>
         <div class="field"><span class="label">おいしさ</span><div class="stars" id="stars"></div></div>
@@ -231,9 +239,10 @@ textarea { min-height: 64px; resize: vertical; }
     </div>
   </section>
 
+  <!-- 3. 記録 -->
   <section id="view-log" hidden>
     <div class="log" id="log">
-      <div class="empty">まだ記録がありません。<br>「淹れる」タブで一杯淹れたら、下のフォームから記録できます。</div>
+      <div class="empty">まだ記録がありません。<br>「淹れる」でレシピを選んで一杯淹れたら、タイマーの下のフォームから記録できます。</div>
     </div>
     <div class="backup">
       <span class="label">バックアップ</span>
@@ -251,78 +260,176 @@ textarea { min-height: 64px; resize: vertical; }
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const RATIO = 16;
-  const ICE_SHARE = 0.4;  // アイスは全体の4割を氷に置き換える（急冷式）
-  const st = { serve: "hot", method: "46", bean: 20, taste: "std", strength: 3, steep: 240, running: false, startAt: 0, elapsed: 0, lastStep: -1, rating: 0 };
-  let raf = 0, audio = null, wakeLock = null;
-
-  const methodLabel = { "46": "透過式 4:6", immersion: "浸漬式", hybrid: "ハイブリッド" };
-  const tasteLabel = { sweet: "甘め", std: "標準", bright: "明るめ" };
-  const strengthLabel = { 2: "軽め", 3: "標準", 4: "濃いめ" };
-  const hints = {
-    "46": "4:6メソッド。最初の4割の注ぎ方で味、残り6割の回数で濃さが変わります。スケールが「累計」の数字になるまで注いでください。",
-    immersion: "クレバー、フレンチプレス、ハリオスイッチ（閉）向け。全量を一度に注いで浸し、時間が来たら落とします。ムラが少なく、味が安定します。",
-    hybrid: "ハリオスイッチやクレバー向け。前半は透過で香りを引き出し、後半はバルブを閉じて浸漬で甘さと厚みを出します。"
-  };
 
   // ---- recipes ----
-  const water = () => Math.round(st.bean * RATIO);
-  const iced = () => st.serve === "iced";
-  const hotWater = () => iced() ? Math.round(water() * (1 - ICE_SHARE)) : water();
-  const iceG = () => water() - hotWater();
-  const waterHtml = () => iced() ? `湯 ${hotWater()}g<small>＋氷 ${iceG()}g</small>` : `${water()} g<small>1:${RATIO}</small>`;
-  function schedule() {
-    const total = hotWater();
-    const doneName = iced() ? "落ちきったらよく混ぜて冷やす" : "落ちきったら完成";
-    let steps, end;
-    if (st.method === "46") {
-      const first = total * 0.4, rest = total * 0.6;
-      const split = { sweet: [5/12, 7/12], std: [0.5, 0.5], bright: [7/12, 5/12] }[st.taste];
-      const pours = [first * split[0], first * split[1]];
-      for (let i = 0; i < st.strength; i++) pours.push(rest / st.strength);
-      let cum = 0;
-      steps = pours.map((p, i) => { cum += p; return { t: i * 45, amount: Math.round(p), cum: Math.round(cum), name: i === 0 ? "蒸らし（1投目）" : `${i + 1}投目` }; });
-      steps[steps.length - 1].cum = total;
-      end = steps[steps.length - 1].t + 45;
-      steps.push({ t: end, name: doneName });
-    } else if (st.method === "immersion") {
-      steps = [
-        { t: 0, name: "全量を注ぐ", cum: total, amount: total },
-        { t: 30, name: "軽く3回ほど混ぜ、ふたをする" },
-        { t: st.steep, name: "落とす（クレバーを置く／プレスを押す）" },
-      ];
-      end = st.steep + 60;
-      steps.push({ t: end, name: doneName });
-    } else {
-      const bloom = Math.round(total * 0.2), second = Math.round(total * 0.4);
-      steps = [
-        { t: 0, name: "バルブ開・蒸らし", cum: bloom, amount: bloom },
-        { t: 40, name: "2投目（透過）", cum: second, amount: second - bloom },
-        { t: 75, name: "バルブを閉じて残りを注ぐ（浸漬）", cum: total, amount: total - second },
-        { t: 150, name: "バルブを開けて落とす" },
-      ];
-      end = 210;
-      steps.push({ t: end, name: doneName });
-    }
-    return { total, steps, end };
-  }
-  const fmt = (s) => { s = Math.max(0, Math.floor(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  // 各レシピは基準の豆量（bean）で書き、豆量を変えると湯・氷・各投の量を比例させる。
+  // steps: t=開始秒, to=その時点までの累計湯量（注がない手順は省略）, label=やること
+  // official:false のアイスは、公式のホットを元にした急冷アレンジ（湯6割＋氷4割）。
+  const ICE_SHARE = 0.4;
+  const RECIPES = [
+    {
+      id: "philo-46", group: "shop", shop: "PHILOCOFFEA", name: "4:6メソッド", dripper: "HARIO V60",
+      hot: { bean: 20, water: 300, temp: "浅煎り93℃ / 中煎り88℃ / 深煎り83℃", grind: "中粗〜粗挽き", end: 210,
+        steps: [{ t: 0, to: 60, label: "1投目（蒸らし）" }, { t: 45, to: 120, label: "2投目" }, { t: 90, to: 180, label: "3投目" }, { t: 130, to: 240, label: "4投目" }, { t: 160, to: 300, label: "5投目" }],
+        tip: "前の湯がほぼ落ちきってから次を注ぎます。3:30に落ちきるよう挽き目を調整してください。",
+        source: ["PHILOCOFFEA 公式", "https://philocoffea.com/pages/how-to-brew"] },
+      iced: { bean: 20, water: 150, ice: 80, temp: "90℃", grind: "中粗〜粗挽き", end: 180,
+        steps: [{ t: 0, to: 30, label: "1投目（蒸らし）" }, { t: 40, to: 60, label: "2投目" }, { t: 70, to: 90, label: "3投目" }, { t: 100, to: 120, label: "4投目" }, { t: 130, to: 150, label: "5投目" }],
+        tip: "蒸らしは粉全体を均一に濡らします（スプーンで混ぜてもOK）。",
+        source: ["BARISTAI 掲載の PHILOCOFFEA レシピ", "https://baristai.net/recipes/shops/2"] }
+    },
+    {
+      id: "philo-hybrid", group: "shop", shop: "PHILOCOFFEA", name: "ハイブリッドメソッド", dripper: "HARIO Switch",
+      hot: { bean: 20, water: 280, temp: "93℃ → 2投目のあと70℃", grind: "中粗〜粗挽き", end: 180,
+        steps: [{ t: 0, to: 60, label: "スイッチを開けて1投目" }, { t: 30, to: 120, label: "2投目。注ぎ終えたらポットの湯に水を足して70℃に" }, { t: 75, to: 280, label: "スイッチを閉じて残りを注ぐ" }, { t: 105, label: "スイッチを開ける" }],
+        tip: "前半は高温の透過で香りと酸味、後半は低温の浸漬で甘さを引き出すレシピです。",
+        source: ["BARISTAI 掲載の PHILOCOFFEA レシピ", "https://baristai.net/recipes/shops/9"] },
+      iced: { bean: 20, water: 140, ice: 80, temp: "93℃ → 2投目のあと70℃", grind: "中粗〜粗挽き", end: 210,
+        steps: [{ t: 0, to: 30, label: "スイッチを開けて1投目" }, { t: 30, to: 70, label: "2投目。注ぎ終えたらポットの湯に水を足して70℃に" }, { t: 100, to: 140, label: "スイッチを閉じて残りを注ぐ" }, { t: 130, label: "スイッチを開ける" }],
+        tip: "サーバーに氷を入れ、その上に直接落とします。",
+        source: ["BARISTAI 掲載の PHILOCOFFEA レシピ", "https://baristai.net/recipes/shops/18"] }
+    },
+    {
+      id: "lightup", group: "shop", shop: "LIGHT UP COFFEE", name: "ドリップ", dripper: "HARIO V60",
+      hot: { bean: 15, water: 240, temp: "90℃", grind: "2:30〜3:00で落ちきる細かさ", end: 165,
+        steps: [{ t: 0, to: 45, label: "蒸らし（30秒待つ）" }, { t: 30, to: 100, label: "2投目" }, { t: 60, to: 160, label: "3投目" }, { t: 80, to: 200, label: "4投目" }, { t: 100, to: 240, label: "5投目" }],
+        tip: "残りの湯は1分以上かけて円を描くように注ぎ、最後にドリッパーを軽く揺すって粉を平らにします。",
+        source: ["LIGHT UP COFFEE 公式", "https://lightupcoffee.com/en/blogs/brew-guide/drip"] },
+      iced: { bean: 21, water: 150, ice: 100, iceGuess: true, temp: "92℃", grind: "ホットより細かめ", end: 135,
+        steps: [{ t: 0, to: 45, label: "蒸らし（スプーンで5回混ぜると甘さが出る）" }, { t: 30, to: 90, label: "2投目" }, { t: 60, to: 120, label: "3投目" }, { t: 90, to: 150, label: "4投目" }],
+        tip: "落ちきったら氷とよく混ぜます。氷の量は公式に記載がないので目安です。",
+        source: ["LIGHT UP COFFEE 公式", "https://lightupcoffee.com/en/blogs/brew-guide/iced-coffee"] }
+    },
+    {
+      id: "glitch", group: "shop", shop: "GLITCH COFFEE & ROASTERS", name: "ハンドドリップ", dripper: "ドリッパー指定なし",
+      hot: { bean: 16.5, water: 250, temp: "86.5℃", grind: "中挽き", end: 150, approx: true,
+        steps: [{ t: 0, to: 50, label: "蒸らし（10秒かけて均一に）" }, { t: 30, label: "スプーンで底から混ぜる" }, { t: 50, to: 120, label: "2投目" }, { t: 80, to: 250, label: "落ち着いたらゆっくり250gまで" }],
+        tip: "抽出液が約210gたまったらドリッパーを外します。3投目以降の時間は記事に記載がないので目安です。",
+        source: ["BE-PAL の GLITCH COFFEE 紹介記事", "https://www.bepal.net/archives/257885"] }
+    },
+    {
+      id: "hoffmann", group: "shop", shop: "James Hoffmann", name: "Ultimate V60", dripper: "HARIO V60",
+      hot: { bean: 15, water: 250, temp: "沸騰直後（熱いほど良い）", grind: "中細挽き", end: 210,
+        steps: [{ t: 0, to: 30, label: "蒸らし（ドリッパーを回して全体をなじませる）" }, { t: 45, to: 150, label: "30秒かけて60%まで" }, { t: 75, to: 250, label: "30秒かけて100%まで、少しやさしく" }, { t: 105, label: "スプーンで右に1回・左に1回混ぜ、軽く回す" }],
+        tip: "元のレシピは豆30g・湯500gです。半量にしています（豆の量を変えると比例して計算します）。",
+        source: ["HARIO USA 掲載レシピ", "https://www.hario-usa.com/blogs/recipes-and-more-from-friends/james-hoffmann-uitimate-v60-technique"] }
+    },
+    {
+      id: "house-46", group: "house", shop: "Daily Brew", name: "透過式 4:6（1:16）", dripper: "V60など円錐ドリッパー",
+      hot: { bean: 20, water: 320, temp: "88〜93℃", grind: "中粗挽き", end: 225,
+        steps: [{ t: 0, to: 64, label: "1投目（蒸らし）" }, { t: 45, to: 128, label: "2投目" }, { t: 90, to: 192, label: "3投目" }, { t: 135, to: 256, label: "4投目" }, { t: 180, to: 320, label: "5投目" }],
+        tip: "4:6メソッドを1:16に合わせた版です。スケールが「累計」の数字になるまで注いでください。" }
+    },
+    {
+      id: "house-immersion", group: "house", shop: "Daily Brew", name: "浸漬式（4分）", dripper: "クレバー / フレンチプレス / Switch",
+      hot: { bean: 20, water: 320, temp: "92〜96℃", grind: "中粗挽き", end: 300,
+        steps: [{ t: 0, to: 320, label: "全量を注ぐ" }, { t: 30, label: "軽く3回ほど混ぜ、ふたをする" }, { t: 240, label: "落とす（クレバーを置く／プレスを押す）" }],
+        tip: "全量を一度に注いで浸すので、ムラが少なく味が安定します。" }
+    },
+    {
+      id: "house-hybrid", group: "house", shop: "Daily Brew", name: "ハイブリッド（1:16）", dripper: "HARIO Switch / クレバー",
+      hot: { bean: 20, water: 320, temp: "90〜93℃", grind: "中挽き", end: 210,
+        steps: [{ t: 0, to: 64, label: "バルブ開・蒸らし" }, { t: 40, to: 128, label: "2投目（透過）" }, { t: 75, to: 320, label: "バルブを閉じて残りを注ぐ（浸漬）" }, { t: 150, label: "バルブを開けて落とす" }],
+        tip: "前半は透過で香りを、後半は浸漬で甘さと厚みを出します。" }
+    },
+  ];
+  const ARRANGE_NOTE = "このお店のアイスレシピは公開されていないため、ホットのレシピを急冷式にアレンジしています（湯を6割にして、残り4割を氷に）。";
 
+  // 公式アイスがなければ、ホットを急冷式に変換する
+  function variant(r, serve) {
+    if (serve === "hot") return { ...r.hot, official: r.group === "shop" };
+    if (r.iced) return { ...r.iced, official: true };
+    const h = r.hot, k = 1 - ICE_SHARE;
+    return {
+      ...h, official: false, water: Math.round(h.water * k), ice: Math.round(h.water * ICE_SHARE),
+      grind: h.grind + "（アイスは1〜2段細かめ）",
+      steps: h.steps.map(s => s.to == null ? s : { ...s, to: Math.round(s.to * k) }),
+      tip: h.tip, source: h.source,
+    };
+  }
+
+  const st = { serve: "hot", recipeId: null, bean: 20, running: false, startAt: 0, elapsed: 0, lastStep: -1, rating: 0 };
+  let raf = 0, audio = null, wakeLock = null;
+  const recipe = () => RECIPES.find(r => r.id === st.recipeId) || RECIPES[0];
+  const cur = () => variant(recipe(), st.serve);
+  const factor = () => st.bean / cur().bean;
+  const scale = (g) => Math.round(g * factor());
+  const iced = () => st.serve === "iced";
+  const hotWater = () => scale(cur().water);
+  const iceG = () => cur().ice ? scale(cur().ice) : 0;
+  const fmt = (s) => { s = Math.max(0, Math.floor(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function schedule() {
+    const v = cur();
+    const steps = v.steps.map(s => ({ ...s, cum: s.to == null ? null : scale(s.to) }));
+    let prev = 0;
+    steps.forEach(s => { if (s.cum != null) { s.amount = s.cum - prev; prev = s.cum; } });
+    steps.push({ t: v.end, label: iced() ? "落ちきったら氷とよく混ぜる" : "落ちきったら完成" });
+    return { steps, end: v.end };
+  }
+
+  // ---- picker ----
+  function specText(r) {
+    const v = variant(r, st.serve);
+    const water = v.ice ? `湯${v.water}g＋氷${v.ice}g` : `湯${v.water}g`;
+    return `豆${v.bean}g ・ ${water} ・ 約${fmt(v.end)}`;
+  }
+  function renderPicker() {
+    document.querySelectorAll("#serve button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === st.serve));
+    for (const g of ["shop", "house"]) {
+      $("list-" + g).innerHTML = RECIPES.filter(r => r.group === g).map(r => {
+        const v = variant(r, st.serve);
+        const badge = iced() && !v.official && g === "shop" ? `<span class="badge">急冷アレンジ</span>` : "";
+        return `<button class="recipe" data-id="${r.id}">
+          ${g === "shop" ? `<span class="shop">${esc(r.shop)}</span>` : ""}
+          <span class="name">${esc(r.name)}${badge}</span>
+          <span class="spec">${esc(r.dripper)} ・ ${specText(r)}</span>
+          <span class="go" aria-hidden="true">›</span>
+        </button>`;
+      }).join("");
+    }
+  }
+  $("serve").onclick = (e) => { const v = e.target.dataset?.v; if (v) { st.serve = v; renderPicker(); } };
+  document.querySelector("#view-pick").addEventListener("click", (e) => {
+    const b = e.target.closest(".recipe"); if (!b) return;
+    openRecipe(b.dataset.id, st.serve);
+  });
+
+  function openRecipe(id, serve, bean) {
+    reset();
+    st.recipeId = id; st.serve = serve;
+    st.bean = bean || cur().bean;
+    showView("brew"); window.scrollTo(0, 0);
+    renderRecipe(); renderSettings(); renderTimer();
+  }
+  function renderRecipe() {
+    const r = recipe(), v = cur();
+    $("r-shop").textContent = r.group === "shop" ? r.shop : "Daily Brew の定番";
+    $("r-name").textContent = `${r.name}（${iced() ? "アイス" : "ホット"}）`;
+    $("r-sub").textContent = `${r.dripper} ・ 湯温 ${v.temp} ・ ${v.grind}`;
+    const notes = [];
+    if (!v.official && iced() && r.group === "shop") notes.push(ARRANGE_NOTE);
+    if (!v.official && iced() && r.group === "house") notes.push(`サーバーに氷を入れ、その上に直接落とします。湯を6割にしたぶん、挽き目は1〜2段細かめに。`);
+    notes.push(v.tip);
+    $("r-hint").textContent = notes.join(" ");
+    $("r-source").innerHTML = v.source ? `出典：<a href="${v.source[1]}" target="_blank" rel="noopener">${esc(v.source[0])}</a>` : "";
+    const t = parseFloat((v.temp.match(/\d+(\.\d+)?/) || [])[0]);
+    if (t) $("f-temp").value = t;
+  }
+  $("back").onclick = () => { reset(); showView("pick"); renderPicker(); };
+
+  // ---- timer ----
   function renderSettings() {
     if (document.activeElement !== $("bean-in")) $("bean-in").value = st.bean;
-    $("water-out").innerHTML = waterHtml();
-    const press = (id, val) => document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset.v == val));
-    press("serve", st.serve); press("method", st.method);
-    $("water-label").textContent = iced() ? "湯と氷（1:16）" : "湯量"; press("taste", st.taste); press("strength", st.strength); press("steep", st.steep);
-    document.querySelectorAll("[data-for]").forEach(el => el.hidden = el.dataset.for !== st.method);
-    $("method-hint").textContent = hints[st.method] + (iced()
-      ? ` アイスは、サーバーに氷${iceG()}gを入れてから、その上に直接落とします。湯が少ないぶん挽き目は1〜2段細かめにすると、薄まらずしっかりした味になります。`
-      : "");
+    $("water-label").textContent = iced() ? "湯と氷" : "湯量";
+    $("water-out").innerHTML = iced() ? `湯 ${hotWater()}g<small>＋氷 ${iceG()}g</small>` : `${hotWater()} g<small>1:${(hotWater() / st.bean).toFixed(1).replace(/\.0$/, "")}</small>`;
     const locked = st.running || st.elapsed > 0;
     document.querySelectorAll(".settings button, .settings input").forEach(b => b.disabled = locked);
   }
 
   function renderTimer() {
+    if (!st.recipeId) return;
     const { steps, end } = schedule();
     const t = st.elapsed;
     let idx = -1;
@@ -339,19 +446,19 @@ textarea { min-height: 64px; resize: vertical; }
 
     const started = st.running || t > 0;
     if (finished) { $("now").textContent = "できあがり"; $("target").textContent = iced() ? "氷を入れたグラスに注いでどうぞ" : "どうぞ召し上がれ"; }
-    else if (!started || idx < 0) { $("now").textContent = iced() ? `サーバーに氷 ${iceG()}g` : "準備OK"; $("target").textContent = `${steps[0].name}${steps[0].cum ? ` 累計 ${steps[0].cum}g` : ""}`; }
+    else if (!started || idx < 0) { $("now").textContent = iced() ? `サーバーに氷 ${iceG()}g` : "準備OK"; $("target").textContent = `${steps[0].label}${steps[0].cum ? ` 累計 ${steps[0].cum}g` : ""}`; }
     else {
-      const cur = steps[idx], next = steps[idx + 1];
-      $("now").textContent = cur.name;
+      const c = steps[idx], next = steps[idx + 1];
+      $("now").textContent = c.label;
       const parts = [];
-      if (cur.cum) parts.push(`累計 ${cur.cum}g`);
+      if (c.cum) parts.push(`累計 ${c.cum}g`);
       if (next) parts.push(`次まで ${fmt(next.t - t)}`);
       $("target").textContent = parts.join(" ・ ");
     }
     $("steps").innerHTML = steps.map((s, i) => {
       const cls = finished ? (i === steps.length - 1 ? "active" : "done") : i < idx ? "done" : i === idx && started ? "active" : "";
       const g = s.cum ? `${s.cum}g${s.amount && s.amount !== s.cum ? ` <small>(+${s.amount})</small>` : ""}` : "";
-      return `<li class="${cls}"><span class="t">${fmt(s.t)}</span><span>${s.name}</span><span class="g">${g}</span></li>`;
+      return `<li class="${cls}"><span class="t">${fmt(s.t)}</span><span>${esc(s.label)}</span><span class="g">${g}</span></li>`;
     }).join("");
 
     if (st.running && idx !== st.lastStep) { beep(idx === 0 ? 1 : 2); st.lastStep = idx; }
@@ -389,31 +496,27 @@ textarea { min-height: 64px; resize: vertical; }
   }
   $("bean-in").addEventListener("input", () => {
     const v = parseFloat($("bean-in").value);
-    if (Number.isFinite(v) && v >= 5 && v <= 60) { st.bean = v; $("water-out").innerHTML = waterHtml(); renderTimer(); }
+    if (Number.isFinite(v) && v >= 5 && v <= 60) { st.bean = v; renderSettings(); renderTimer(); }
   });
   $("bean-in").addEventListener("change", commitBean);
   $("bean-in").addEventListener("keydown", (e) => { if (e.key === "Enter") $("bean-in").blur(); });
   $("bean-minus").onclick = () => { st.bean = clampBean(st.bean - 1); renderSettings(); renderTimer(); };
   $("bean-plus").onclick = () => { st.bean = clampBean(st.bean + 1); renderSettings(); renderTimer(); };
-  const segHandler = (key, conv) => (e) => { const v = e.target.dataset?.v; if (v) { st[key] = conv(v); renderSettings(); renderTimer(); } };
-  $("serve").onclick = segHandler("serve", String);
-  $("method").onclick = segHandler("method", String);
-  $("taste").onclick = segHandler("taste", String);
-  $("strength").onclick = segHandler("strength", Number);
-  $("steep").onclick = segHandler("steep", Number);
   $("start").onclick = () => st.running ? stop() : start();
   $("reset").onclick = reset;
   document.addEventListener("visibilitychange", async () => { if (st.running && document.visibilityState === "visible") { try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (e) {} } });
 
-  // ---- tabs ----
-  function showTab(name) {
-    $("tab-brew").setAttribute("aria-selected", name === "brew");
-    $("tab-log").setAttribute("aria-selected", name === "log");
+  // ---- views ----
+  function showView(name) {
+    const brewTab = name !== "log";
+    $("tab-brew").setAttribute("aria-selected", brewTab);
+    $("tab-log").setAttribute("aria-selected", !brewTab);
+    $("view-pick").hidden = name !== "pick";
     $("view-brew").hidden = name !== "brew";
     $("view-log").hidden = name !== "log";
   }
-  $("tab-brew").onclick = () => showTab("brew");
-  $("tab-log").onclick = () => showTab("log");
+  $("tab-brew").onclick = () => showView(st.recipeId ? "brew" : "pick");
+  $("tab-log").onclick = () => showView("log");
 
   // ---- stars ----
   function renderStars() {
@@ -421,7 +524,7 @@ textarea { min-height: 64px; resize: vertical; }
   }
   $("stars").onclick = (e) => { const n = +e.target.dataset?.n; if (n) { st.rating = st.rating === n ? 0 : n; renderStars(); } };
 
-  // ---- records (db) ----
+  // ---- records (localStorage) ----
   const KEY = "dailybrew.brews.v1";
   let entries = [], pendingDelete = null;
   function load() { try { const v = JSON.parse(localStorage.getItem(KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
@@ -430,26 +533,25 @@ textarea { min-height: 64px; resize: vertical; }
     try { localStorage.setItem(KEY, JSON.stringify(entries)); return true; } catch (e) { return false; }
   }
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // 旧バージョンの記録（method のみ）を定番レシピに対応づける
+  const legacyRecipe = { "46": "house-46", immersion: "house-immersion", hybrid: "house-hybrid" };
+  const entryRecipeId = (e) => e.recipeId || legacyRecipe[e.method] || "house-46";
+
   function recipeText(e) {
-    return (e.serve === "iced" ? "アイス・" : "") + methodText(e);
-  }
-  function methodText(e) {
-    const m = e.method || "46";
-    if (m === "46") return `${methodLabel[m]}（${tasteLabel[e.taste] || "標準"}・${strengthLabel[e.strength] || "標準"}）`;
-    if (m === "immersion") return `${methodLabel[m]}（${Math.round((e.steep || 240) / 60)}分）`;
-    return methodLabel[m];
+    const r = RECIPES.find(x => x.id === entryRecipeId(e));
+    const name = e.recipeName || (r ? (r.group === "shop" ? `${r.shop} ${r.name}` : r.name) : "");
+    return (e.serve === "iced" ? "アイス・" : "") + name;
   }
 
   function renderLog() {
-    if (!entries.length) { $("log").innerHTML = `<div class="empty">まだ記録がありません。<br>「淹れる」タブで一杯淹れたら、下のフォームから記録できます。</div>`; return; }
+    if (!entries.length) { $("log").innerHTML = `<div class="empty">まだ記録がありません。<br>「淹れる」でレシピを選んで一杯淹れたら、タイマーの下のフォームから記録できます。</div>`; return; }
     $("log").innerHTML = entries.map(e => {
       const d = new Date(e.at);
       const date = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
       const confirm = pendingDelete === e.id;
       return `<article class="entry">
         <div class="top"><span class="bean">${esc(e.bean || "名前なしの豆")}</span><span class="date">${date}</span></div>
-        <div class="meta">${recipeText(e)} ・ ${esc(e.roast)} ・ ${e.beanG}g / ${e.waterG}g${e.iceG ? `＋氷${e.iceG}g` : ""} ・ ${e.temp ?? "-"}℃${e.grind ? " ・ " + esc(e.grind) : ""}</div>
+        <div class="meta">${esc(recipeText(e))} ・ ${esc(e.roast)} ・ ${e.beanG}g / ${e.waterG}g${e.iceG ? `＋氷${e.iceG}g` : ""} ・ ${e.temp ?? "-"}℃${e.grind ? " ・ " + esc(e.grind) : ""}</div>
         ${e.rating ? `<div class="rate">${"★".repeat(e.rating)}</div>` : ""}
         ${e.memo ? `<div class="memo">${esc(e.memo)}</div>` : ""}
         <div class="acts">
@@ -461,38 +563,35 @@ textarea { min-height: 64px; resize: vertical; }
     }).join("");
   }
 
-  $("log").onclick = async (ev) => {
+  $("log").onclick = (ev) => {
     const t = ev.target.dataset || {};
     if (t.del) { pendingDelete = t.del; renderLog(); }
     else if (t.delNo) { pendingDelete = null; renderLog(); }
     else if (t.delYes) { pendingDelete = null; entries = entries.filter(x => x.id !== t.delYes); persist(); renderLog(); }
-    else if (t.reuse) { const e = entries.find(x => x.id === t.reuse); if (e) { applyEntry(e); reset(); showTab("brew"); window.scrollTo(0, 0); } }
+    else if (t.reuse) {
+      const e = entries.find(x => x.id === t.reuse);
+      if (e) {
+        openRecipe(entryRecipeId(e), e.serve === "iced" ? "iced" : "hot", e.beanG);
+        $("f-bean").value = e.bean || ""; $("f-roast").value = e.roast || "中煎り"; if (e.temp != null) $("f-temp").value = e.temp; $("f-grind").value = e.grind || "";
+      }
+    }
   };
 
-  function applyEntry(e) {
-    st.serve = e.serve === "iced" ? "iced" : "hot";
-    st.method = e.method || "46";
-    st.bean = e.beanG || st.bean; st.taste = e.taste || st.taste; st.strength = e.strength || st.strength; st.steep = e.steep || st.steep;
-    $("f-bean").value = e.bean || ""; $("f-roast").value = e.roast || "中煎り"; $("f-temp").value = e.temp ?? 92; $("f-grind").value = e.grind || "";
-    renderSettings(); renderTimer();
-  }
   function alertLine(msg) { $("toast").textContent = msg; }
-
-  $("form").addEventListener("submit", async (ev) => {
+  $("form").addEventListener("submit", (ev) => {
     ev.preventDefault();
     commitBean();
+    const r = recipe();
     const entry = {
-      at: new Date().toISOString(), method: st.method,
+      id: newId(), at: new Date().toISOString(),
+      recipeId: r.id, recipeName: r.group === "shop" ? `${r.shop} ${r.name}` : r.name, serve: st.serve,
       bean: $("f-bean").value.trim(), roast: $("f-roast").value,
       temp: $("f-temp").value ? +$("f-temp").value : null, grind: $("f-grind").value.trim(),
-      beanG: st.bean, waterG: hotWater(), ratio: RATIO, serve: st.serve,
+      beanG: st.bean, waterG: hotWater(),
       rating: st.rating, memo: $("f-memo").value.trim()
     };
-    if (st.method === "46") { entry.taste = st.taste; entry.strength = st.strength; }
-    if (st.method === "immersion") entry.steep = st.steep;
     if (iced()) entry.iceG = iceG();
     $("save").disabled = true;
-    entry.id = newId();
     entries.push(entry);
     if (persist()) {
       alertLine("記録しました。「記録」タブで見られます。");
@@ -503,12 +602,6 @@ textarea { min-height: 64px; resize: vertical; }
     }
     $("save").disabled = false;
   });
-
-  renderSettings(); renderTimer(); renderStars(); renderLog();
-
-  entries = load(); persist(); renderLog();
-  if (entries.length) applyEntry(entries[0]);  // 前回の豆と設定を引き継ぐ
-  try { navigator.storage?.persist?.(); } catch (e) {}
 
   // ---- backup ----
   const backupLine = (m) => { $("backup-toast").textContent = m; };
@@ -541,6 +634,11 @@ textarea { min-height: 64px; resize: vertical; }
     } catch (e) { backupLine("読み込めませんでした。Daily Brew で書き出したファイルを選んでください。"); }
   };
 
+  // ---- boot ----
+  entries = load(); persist();
+  if (entries[0]?.serve === "iced") st.serve = "iced";  // 前回がアイスならアイスから選べるように
+  renderPicker(); renderStars(); renderLog();
+  try { navigator.storage?.persist?.(); } catch (e) {}
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 </script>
