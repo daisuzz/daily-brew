@@ -142,6 +142,13 @@ textarea { min-height: 64px; resize: vertical; }
     <div class="panel">
       <div class="settings">
         <div class="field full">
+          <span class="label">ホット / アイス</span>
+          <div class="seg" id="serve">
+            <button data-v="hot" aria-pressed="true">ホット</button>
+            <button data-v="iced" aria-pressed="false">アイス（急冷）</button>
+          </div>
+        </div>
+        <div class="field full">
           <span class="label">抽出方法</span>
           <div class="seg" id="method">
             <button data-v="46" aria-pressed="true">透過式 4:6</button>
@@ -154,7 +161,7 @@ textarea { min-height: 64px; resize: vertical; }
           <div class="stepper"><button id="bean-minus" aria-label="豆を減らす">−</button><input id="bean-in" type="number" inputmode="decimal" min="5" max="60" step="0.5" value="20"><span class="unit">g</span><button id="bean-plus" aria-label="豆を増やす">＋</button></div>
         </div>
         <div class="field">
-          <span class="label">湯量</span>
+          <span class="label" id="water-label">湯量</span>
           <div class="readout" id="water-out">320 g<small>1:16</small></div>
         </div>
         <div class="field" data-for="46">
@@ -245,7 +252,8 @@ textarea { min-height: 64px; resize: vertical; }
 (() => {
   const $ = (id) => document.getElementById(id);
   const RATIO = 16;
-  const st = { method: "46", bean: 20, taste: "std", strength: 3, steep: 240, running: false, startAt: 0, elapsed: 0, lastStep: -1, rating: 0 };
+  const ICE_SHARE = 0.4;  // アイスは全体の4割を氷に置き換える（急冷式）
+  const st = { serve: "hot", method: "46", bean: 20, taste: "std", strength: 3, steep: 240, running: false, startAt: 0, elapsed: 0, lastStep: -1, rating: 0 };
   let raf = 0, audio = null, wakeLock = null;
 
   const methodLabel = { "46": "透過式 4:6", immersion: "浸漬式", hybrid: "ハイブリッド" };
@@ -259,8 +267,13 @@ textarea { min-height: 64px; resize: vertical; }
 
   // ---- recipes ----
   const water = () => Math.round(st.bean * RATIO);
+  const iced = () => st.serve === "iced";
+  const hotWater = () => iced() ? Math.round(water() * (1 - ICE_SHARE)) : water();
+  const iceG = () => water() - hotWater();
+  const waterHtml = () => iced() ? `湯 ${hotWater()}g<small>＋氷 ${iceG()}g</small>` : `${water()} g<small>1:${RATIO}</small>`;
   function schedule() {
-    const total = water();
+    const total = hotWater();
+    const doneName = iced() ? "落ちきったらよく混ぜて冷やす" : "落ちきったら完成";
     let steps, end;
     if (st.method === "46") {
       const first = total * 0.4, rest = total * 0.6;
@@ -271,7 +284,7 @@ textarea { min-height: 64px; resize: vertical; }
       steps = pours.map((p, i) => { cum += p; return { t: i * 45, amount: Math.round(p), cum: Math.round(cum), name: i === 0 ? "蒸らし（1投目）" : `${i + 1}投目` }; });
       steps[steps.length - 1].cum = total;
       end = steps[steps.length - 1].t + 45;
-      steps.push({ t: end, name: "落ちきったら完成" });
+      steps.push({ t: end, name: doneName });
     } else if (st.method === "immersion") {
       steps = [
         { t: 0, name: "全量を注ぐ", cum: total, amount: total },
@@ -279,7 +292,7 @@ textarea { min-height: 64px; resize: vertical; }
         { t: st.steep, name: "落とす（クレバーを置く／プレスを押す）" },
       ];
       end = st.steep + 60;
-      steps.push({ t: end, name: "落ちきったら完成" });
+      steps.push({ t: end, name: doneName });
     } else {
       const bloom = Math.round(total * 0.2), second = Math.round(total * 0.4);
       steps = [
@@ -289,7 +302,7 @@ textarea { min-height: 64px; resize: vertical; }
         { t: 150, name: "バルブを開けて落とす" },
       ];
       end = 210;
-      steps.push({ t: end, name: "落ちきったら完成" });
+      steps.push({ t: end, name: doneName });
     }
     return { total, steps, end };
   }
@@ -297,11 +310,14 @@ textarea { min-height: 64px; resize: vertical; }
 
   function renderSettings() {
     if (document.activeElement !== $("bean-in")) $("bean-in").value = st.bean;
-    $("water-out").innerHTML = `${water()} g<small>1:${RATIO}</small>`;
+    $("water-out").innerHTML = waterHtml();
     const press = (id, val) => document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset.v == val));
-    press("method", st.method); press("taste", st.taste); press("strength", st.strength); press("steep", st.steep);
+    press("serve", st.serve); press("method", st.method);
+    $("water-label").textContent = iced() ? "湯と氷（1:16）" : "湯量"; press("taste", st.taste); press("strength", st.strength); press("steep", st.steep);
     document.querySelectorAll("[data-for]").forEach(el => el.hidden = el.dataset.for !== st.method);
-    $("method-hint").textContent = hints[st.method];
+    $("method-hint").textContent = hints[st.method] + (iced()
+      ? ` アイスは、サーバーに氷${iceG()}gを入れてから、その上に直接落とします。湯が少ないぶん挽き目は1〜2段細かめにすると、薄まらずしっかりした味になります。`
+      : "");
     const locked = st.running || st.elapsed > 0;
     document.querySelectorAll(".settings button, .settings input").forEach(b => b.disabled = locked);
   }
@@ -322,8 +338,8 @@ textarea { min-height: 64px; resize: vertical; }
     }).join("");
 
     const started = st.running || t > 0;
-    if (finished) { $("now").textContent = "できあがり"; $("target").textContent = "どうぞ召し上がれ"; }
-    else if (!started || idx < 0) { $("now").textContent = "準備OK"; $("target").textContent = `${steps[0].name}${steps[0].cum ? ` 累計 ${steps[0].cum}g` : ""}`; }
+    if (finished) { $("now").textContent = "できあがり"; $("target").textContent = iced() ? "氷を入れたグラスに注いでどうぞ" : "どうぞ召し上がれ"; }
+    else if (!started || idx < 0) { $("now").textContent = iced() ? `サーバーに氷 ${iceG()}g` : "準備OK"; $("target").textContent = `${steps[0].name}${steps[0].cum ? ` 累計 ${steps[0].cum}g` : ""}`; }
     else {
       const cur = steps[idx], next = steps[idx + 1];
       $("now").textContent = cur.name;
@@ -373,13 +389,14 @@ textarea { min-height: 64px; resize: vertical; }
   }
   $("bean-in").addEventListener("input", () => {
     const v = parseFloat($("bean-in").value);
-    if (Number.isFinite(v) && v >= 5 && v <= 60) { st.bean = v; $("water-out").innerHTML = `${water()} g<small>1:${RATIO}</small>`; renderTimer(); }
+    if (Number.isFinite(v) && v >= 5 && v <= 60) { st.bean = v; $("water-out").innerHTML = waterHtml(); renderTimer(); }
   });
   $("bean-in").addEventListener("change", commitBean);
   $("bean-in").addEventListener("keydown", (e) => { if (e.key === "Enter") $("bean-in").blur(); });
   $("bean-minus").onclick = () => { st.bean = clampBean(st.bean - 1); renderSettings(); renderTimer(); };
   $("bean-plus").onclick = () => { st.bean = clampBean(st.bean + 1); renderSettings(); renderTimer(); };
   const segHandler = (key, conv) => (e) => { const v = e.target.dataset?.v; if (v) { st[key] = conv(v); renderSettings(); renderTimer(); } };
+  $("serve").onclick = segHandler("serve", String);
   $("method").onclick = segHandler("method", String);
   $("taste").onclick = segHandler("taste", String);
   $("strength").onclick = segHandler("strength", Number);
@@ -415,6 +432,9 @@ textarea { min-height: 64px; resize: vertical; }
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   function recipeText(e) {
+    return (e.serve === "iced" ? "アイス・" : "") + methodText(e);
+  }
+  function methodText(e) {
     const m = e.method || "46";
     if (m === "46") return `${methodLabel[m]}（${tasteLabel[e.taste] || "標準"}・${strengthLabel[e.strength] || "標準"}）`;
     if (m === "immersion") return `${methodLabel[m]}（${Math.round((e.steep || 240) / 60)}分）`;
@@ -429,7 +449,7 @@ textarea { min-height: 64px; resize: vertical; }
       const confirm = pendingDelete === e.id;
       return `<article class="entry">
         <div class="top"><span class="bean">${esc(e.bean || "名前なしの豆")}</span><span class="date">${date}</span></div>
-        <div class="meta">${recipeText(e)} ・ ${esc(e.roast)} ・ ${e.beanG}g / ${e.waterG}g ・ ${e.temp ?? "-"}℃${e.grind ? " ・ " + esc(e.grind) : ""}</div>
+        <div class="meta">${recipeText(e)} ・ ${esc(e.roast)} ・ ${e.beanG}g / ${e.waterG}g${e.iceG ? `＋氷${e.iceG}g` : ""} ・ ${e.temp ?? "-"}℃${e.grind ? " ・ " + esc(e.grind) : ""}</div>
         ${e.rating ? `<div class="rate">${"★".repeat(e.rating)}</div>` : ""}
         ${e.memo ? `<div class="memo">${esc(e.memo)}</div>` : ""}
         <div class="acts">
@@ -450,6 +470,7 @@ textarea { min-height: 64px; resize: vertical; }
   };
 
   function applyEntry(e) {
+    st.serve = e.serve === "iced" ? "iced" : "hot";
     st.method = e.method || "46";
     st.bean = e.beanG || st.bean; st.taste = e.taste || st.taste; st.strength = e.strength || st.strength; st.steep = e.steep || st.steep;
     $("f-bean").value = e.bean || ""; $("f-roast").value = e.roast || "中煎り"; $("f-temp").value = e.temp ?? 92; $("f-grind").value = e.grind || "";
@@ -464,11 +485,12 @@ textarea { min-height: 64px; resize: vertical; }
       at: new Date().toISOString(), method: st.method,
       bean: $("f-bean").value.trim(), roast: $("f-roast").value,
       temp: $("f-temp").value ? +$("f-temp").value : null, grind: $("f-grind").value.trim(),
-      beanG: st.bean, waterG: water(), ratio: RATIO,
+      beanG: st.bean, waterG: hotWater(), ratio: RATIO, serve: st.serve,
       rating: st.rating, memo: $("f-memo").value.trim()
     };
     if (st.method === "46") { entry.taste = st.taste; entry.strength = st.strength; }
     if (st.method === "immersion") entry.steep = st.steep;
+    if (iced()) entry.iceG = iceG();
     $("save").disabled = true;
     entry.id = newId();
     entries.push(entry);
