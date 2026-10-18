@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Brew</title>
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1214" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Daily Brew">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Chivo+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one narrow column like a brew card on a white counter; quiet greys, one clear blue for what to do now */
+:root {
+  --bg: #ffffff;
+  --surface: #f7f8f9;
+  --ink: #1c1f22;
+  --muted: #7d858c;
+  --line: #e4e7ea;
+  --accent: #0a8fd0;      /* clear sky blue */
+  --accent-ink: #ffffff;
+  --accent-soft: #e5f4fb;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-num: "Chivo Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1214; --surface: #171b1e; --ink: #eef1f3; --muted: #8e979e; --line: #2a3035;
+  --accent: #4bb8ea; --accent-ink: #0f1214; --accent-soft: #13303f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1214; --surface: #171b1e; --ink: #eef1f3; --muted: #8e979e; --line: #2a3035;
+  --accent: #4bb8ea; --accent-ink: #0f1214; --accent-soft: #13303f; color-scheme: dark }
+
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+* { box-sizing: border-box; }
+.backup { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+.backup .row { display: flex; gap: 10px; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 40px;
+}
+.wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 4px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+h1 { font-size: 18px; margin: 0; font-weight: 500; letter-spacing: .12em; }
+.tabs { display: flex; gap: 18px; }
+.tabs button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 500; padding: 4px 0; cursor: pointer; border-bottom: 2px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.panel { background: var(--surface); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.label { font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
+
+/* settings */
+.settings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--bg); }
+.stepper button { width: 40px; height: 42px; border: 0; background: transparent; color: var(--accent); font-size: 20px; cursor: pointer; flex: none; }
+.stepper input { flex: 1; min-width: 0; width: 100%; border: 0; background: transparent; color: var(--ink); text-align: center; font-family: var(--font-num); font-size: 17px; font-variant-numeric: tabular-nums; padding: 0; height: 42px; -moz-appearance: textfield; }
+.stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper .unit { color: var(--muted); font-size: 13px; padding-right: 4px; }
+.readout { display: flex; align-items: center; justify-content: center; height: 44px; border: 1px solid var(--line); border-radius: 4px; font-family: var(--font-num); font-size: 17px; font-variant-numeric: tabular-nums; }
+.readout small { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--bg); }
+.seg button { flex: 1; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; padding: 9px 2px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg button:disabled, .stepper button:disabled, .stepper input:disabled { cursor: default; opacity: .5; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* dial */
+.dial { display: grid; place-items: center; position: relative; }
+.dial svg { width: min(260px, 70vw); height: auto; max-width: 100%; display: block; }
+.dial .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2px; padding: 0 22%; }
+.clock { font-family: var(--font-num); font-size: 44px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1; }
+.now { font-size: 13px; font-weight: 700; color: var(--accent); text-wrap: balance; }
+.target { font-family: var(--font-num); font-size: 12px; color: var(--muted); }
+.controls { display: flex; gap: 10px; }
+.btn { flex: 1; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-weight: 700; letter-spacing: .06em; padding: 12px; border-radius: 4px; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+
+/* schedule */
+ol.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+ol.steps li { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: baseline; padding: 9px 6px; border-top: 1px solid var(--line); }
+ol.steps li:first-child { border-top: 0; }
+ol.steps .t { font-family: var(--font-num); color: var(--muted); font-variant-numeric: tabular-nums; }
+ol.steps .g { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+ol.steps .g small { color: var(--muted); }
+ol.steps li.done { color: var(--muted); }
+ol.steps li.active { background: var(--accent-soft); border-radius: 4px; border-top-color: transparent; }
+ol.steps li.active .g, ol.steps li.active > span:nth-child(2) { color: var(--accent); font-weight: 700; }
+ol.steps li.active + li { border-top-color: transparent; }
+
+/* form */
+form { display: flex; flex-direction: column; gap: 12px; }
+input[type="text"], input.plain, textarea, select {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 9px 11px; }
+textarea { min-height: 64px; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stars { display: flex; gap: 4px; }
+.stars button { border: 0; background: transparent; font-size: 28px; line-height: 1; padding: 2px; cursor: pointer; color: var(--line); }
+.stars button.on { color: var(--accent); }
+.toast { font-size: 13px; color: var(--accent); min-height: 1.2em; margin: 0; }
+
+/* log */
+.log { display: flex; flex-direction: column; gap: 0; }
+.entry { padding: 14px 2px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.entry .top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.entry .bean { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.entry .date { font-family: var(--font-num); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.entry .meta { font-size: 12px; color: var(--muted); }
+.entry .memo { font-size: 14px; overflow-wrap: anywhere; }
+.entry .rate { color: var(--accent); letter-spacing: 2px; }
+.entry .acts { display: flex; gap: 8px; justify-content: flex-end; }
+.link { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; padding: 4px; }
+.link.quiet { color: var(--muted); }
+.link.danger { color: #d0453a; font-weight: 700; }
+.empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1px dashed var(--line); border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Daily Brew</h1>
+    <div class="tabs" role="tablist">
+      <button id="tab-brew" role="tab" aria-selected="true">淹れる</button>
+      <button id="tab-log" role="tab" aria-selected="false">記録</button>
+    </div>
+  </header>
+
+  <section id="view-brew" style="display:flex;flex-direction:column;gap:16px">
+    <div class="panel">
+      <div class="settings">
+        <div class="field full">
+          <span class="label">抽出方法</span>
+          <div class="seg" id="method">
+            <button data-v="46" aria-pressed="true">透過式 4:6</button>
+            <button data-v="immersion" aria-pressed="false">浸漬式</button>
+            <button data-v="hybrid" aria-pressed="false">ハイブリッド</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="bean-in">豆</label>
+          <div class="stepper"><button id="bean-minus" aria-label="豆を減らす">−</button><input id="bean-in" type="number" inputmode="decimal" min="5" max="60" step="0.5" value="20"><span class="unit">g</span><button id="bean-plus" aria-label="豆を増やす">＋</button></div>
+        </div>
+        <div class="field">
+          <span class="label">湯量</span>
+          <div class="readout" id="water-out">320 g<small>1:16</small></div>
+        </div>
+        <div class="field" data-for="46">
+          <span class="label">味</span>
+          <div class="seg" id="taste">
+            <button data-v="sweet" aria-pressed="false">甘め</button>
+            <button data-v="std" aria-pressed="true">標準</button>
+            <button data-v="bright" aria-pressed="false">明るめ</button>
+          </div>
+        </div>
+        <div class="field" data-for="46">
+          <span class="label">濃さ</span>
+          <div class="seg" id="strength">
+            <button data-v="2" aria-pressed="false">軽め</button>
+            <button data-v="3" aria-pressed="true">標準</button>
+            <button data-v="4" aria-pressed="false">濃いめ</button>
+          </div>
+        </div>
+        <div class="field full" data-for="immersion">
+          <span class="label">浸漬時間</span>
+          <div class="seg" id="steep">
+            <button data-v="180" aria-pressed="false">3分</button>
+            <button data-v="240" aria-pressed="true">4分</button>
+            <button data-v="300" aria-pressed="false">5分</button>
+          </div>
+        </div>
+      </div>
+      <p class="hint" id="method-hint"></p>
+    </div>
+
+    <div class="panel">
+      <div class="dial">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="88" fill="none" stroke="var(--line)" stroke-width="6"></circle>
+          <circle id="ring" cx="100" cy="100" r="88" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round"
+            transform="rotate(-90 100 100)" stroke-dasharray="552.9" stroke-dashoffset="552.9"></circle>
+          <g id="ticks"></g>
+        </svg>
+        <div class="center">
+          <div class="now" id="now">準備OK</div>
+          <div class="clock" id="clock">0:00</div>
+          <div class="target" id="target"></div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="start">スタート</button>
+        <button class="btn" id="reset">リセット</button>
+      </div>
+      <ol class="steps" id="steps"></ol>
+    </div>
+
+    <div class="panel" id="record-panel">
+      <span class="label">この一杯を記録</span>
+      <form id="form">
+        <div class="field"><label class="label" for="f-bean">豆の名前</label><input type="text" id="f-bean" placeholder="例：エチオピア イルガチェフェ"></div>
+        <div class="row2">
+          <div class="field"><label class="label" for="f-roast">焙煎</label>
+            <select id="f-roast"><option>浅煎り</option><option selected>中煎り</option><option>中深煎り</option><option>深煎り</option></select></div>
+          <div class="field"><label class="label" for="f-temp">湯温 ℃</label><input class="plain" type="number" id="f-temp" value="92" inputmode="numeric" min="70" max="100"></div>
+        </div>
+        <div class="field"><label class="label" for="f-grind">挽き目（ミルの目盛りなど）</label><input type="text" id="f-grind" placeholder="例：中細挽き / コマンダンテ 24クリック"></div>
+        <div class="field"><span class="label">おいしさ</span><div class="stars" id="stars"></div></div>
+        <div class="field"><label class="label" for="f-memo">メモ</label><textarea id="f-memo" placeholder="酸味が明るい、次はもう少し細かく など"></textarea></div>
+        <button class="btn primary" type="submit" id="save">記録する</button>
+        <p class="toast" id="toast" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="view-log" hidden>
+    <div class="log" id="log">
+      <div class="empty">まだ記録がありません。<br>「淹れる」タブで一杯淹れたら、下のフォームから記録できます。</div>
+    </div>
+    <div class="backup">
+      <span class="label">バックアップ</span>
+      <p class="hint">記録はこのスマホのブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておくと安心です。</p>
+      <div class="row">
+        <button class="btn" id="export">書き出す</button>
+        <button class="btn" id="import-btn">読み込む</button>
+        <input type="file" id="import" accept="application/json,.json" hidden>
+      </div>
+      <p class="toast" id="backup-toast" role="status"></p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const RATIO = 16;
+  const st = { method: "46", bean: 20, taste: "std", strength: 3, steep: 240, running: false, startAt: 0, elapsed: 0, lastStep: -1, rating: 0 };
+  let raf = 0, audio = null, wakeLock = null;
+
+  const methodLabel = { "46": "透過式 4:6", immersion: "浸漬式", hybrid: "ハイブリッド" };
+  const tasteLabel = { sweet: "甘め", std: "標準", bright: "明るめ" };
+  const strengthLabel = { 2: "軽め", 3: "標準", 4: "濃いめ" };
+  const hints = {
+    "46": "4:6メソッド。最初の4割の注ぎ方で味、残り6割の回数で濃さが変わります。スケールが「累計」の数字になるまで注いでください。",
+    immersion: "クレバー、フレンチプレス、ハリオスイッチ（閉）向け。全量を一度に注いで浸し、時間が来たら落とします。ムラが少なく、味が安定します。",
+    hybrid: "ハリオスイッチやクレバー向け。前半は透過で香りを引き出し、後半はバルブを閉じて浸漬で甘さと厚みを出します。"
+  };
+
+  // ---- recipes ----
+  const water = () => Math.round(st.bean * RATIO);
+  function schedule() {
+    const total = water();
+    let steps, end;
+    if (st.method === "46") {
+      const first = total * 0.4, rest = total * 0.6;
+      const split = { sweet: [5/12, 7/12], std: [0.5, 0.5], bright: [7/12, 5/12] }[st.taste];
+      const pours = [first * split[0], first * split[1]];
+      for (let i = 0; i < st.strength; i++) pours.push(rest / st.strength);
+      let cum = 0;
+      steps = pours.map((p, i) => { cum += p; return { t: i * 45, amount: Math.round(p), cum: Math.round(cum), name: i === 0 ? "蒸らし（1投目）" : `${i + 1}投目` }; });
+      steps[steps.length - 1].cum = total;
+      end = steps[steps.length - 1].t + 45;
+      steps.push({ t: end, name: "落ちきったら完成" });
+    } else if (st.method === "immersion") {
+      steps = [
+        { t: 0, name: "全量を注ぐ", cum: total, amount: total },
+        { t: 30, name: "軽く3回ほど混ぜ、ふたをする" },
+        { t: st.steep, name: "落とす（クレバーを置く／プレスを押す）" },
+      ];
+      end = st.steep + 60;
+      steps.push({ t: end, name: "落ちきったら完成" });
+    } else {
+      const bloom = Math.round(total * 0.2), second = Math.round(total * 0.4);
+      steps = [
+        { t: 0, name: "バルブ開・蒸らし", cum: bloom, amount: bloom },
+        { t: 40, name: "2投目（透過）", cum: second, amount: second - bloom },
+        { t: 75, name: "バルブを閉じて残りを注ぐ（浸漬）", cum: total, amount: total - second },
+        { t: 150, name: "バルブを開けて落とす" },
+      ];
+      end = 210;
+      steps.push({ t: end, name: "落ちきったら完成" });
+    }
+    return { total, steps, end };
+  }
+  const fmt = (s) => { s = Math.max(0, Math.floor(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+  function renderSettings() {
+    if (document.activeElement !== $("bean-in")) $("bean-in").value = st.bean;
+    $("water-out").innerHTML = `${water()} g<small>1:${RATIO}</small>`;
+    const press = (id, val) => document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset.v == val));
+    press("method", st.method); press("taste", st.taste); press("strength", st.strength); press("steep", st.steep);
+    document.querySelectorAll("[data-for]").forEach(el => el.hidden = el.dataset.for !== st.method);
+    $("method-hint").textContent = hints[st.method];
+    const locked = st.running || st.elapsed > 0;
+    document.querySelectorAll(".settings button, .settings input").forEach(b => b.disabled = locked);
+  }
+
+  function renderTimer() {
+    const { steps, end } = schedule();
+    const t = st.elapsed;
+    let idx = -1;
+    steps.forEach((s, i) => { if (t >= s.t) idx = i; });
+    const finished = t >= end;
+    $("clock").textContent = fmt(t);
+    const C = 552.9;
+    $("ring").setAttribute("stroke-dashoffset", String(C * (1 - Math.min(1, t / end))));
+    $("ticks").innerHTML = steps.filter(s => s.t < end).map(s => {
+      const a = (s.t / end) * 2 * Math.PI - Math.PI / 2;
+      const x = 100 + 88 * Math.cos(a), y = 100 + 88 * Math.sin(a);
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"></circle>`;
+    }).join("");
+
+    const started = st.running || t > 0;
+    if (finished) { $("now").textContent = "できあがり"; $("target").textContent = "どうぞ召し上がれ"; }
+    else if (!started || idx < 0) { $("now").textContent = "準備OK"; $("target").textContent = `${steps[0].name}${steps[0].cum ? ` 累計 ${steps[0].cum}g` : ""}`; }
+    else {
+      const cur = steps[idx], next = steps[idx + 1];
+      $("now").textContent = cur.name;
+      const parts = [];
+      if (cur.cum) parts.push(`累計 ${cur.cum}g`);
+      if (next) parts.push(`次まで ${fmt(next.t - t)}`);
+      $("target").textContent = parts.join(" ・ ");
+    }
+    $("steps").innerHTML = steps.map((s, i) => {
+      const cls = finished ? (i === steps.length - 1 ? "active" : "done") : i < idx ? "done" : i === idx && started ? "active" : "";
+      const g = s.cum ? `${s.cum}g${s.amount && s.amount !== s.cum ? ` <small>(+${s.amount})</small>` : ""}` : "";
+      return `<li class="${cls}"><span class="t">${fmt(s.t)}</span><span>${s.name}</span><span class="g">${g}</span></li>`;
+    }).join("");
+
+    if (st.running && idx !== st.lastStep) { beep(idx === 0 ? 1 : 2); st.lastStep = idx; }
+    if (st.running && finished) { beep(3); stop(); }
+    $("start").textContent = st.running ? "一時停止" : t > 0 && !finished ? "再開" : "スタート";
+    $("start").disabled = finished;
+  }
+
+  function tick() { st.elapsed = (performance.now() - st.startAt) / 1000; renderTimer(); if (st.running) raf = requestAnimationFrame(tick); }
+  async function start() {
+    commitBean();
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); await audio.resume(); } catch (e) { audio = null; }
+    try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (e) { wakeLock = null; }
+    st.running = true; st.startAt = performance.now() - st.elapsed * 1000;
+    renderSettings(); tick();
+  }
+  function stop() { st.running = false; cancelAnimationFrame(raf); try { wakeLock?.release(); } catch (e) {} wakeLock = null; renderSettings(); renderTimer(); }
+  function reset() { stop(); st.elapsed = 0; st.lastStep = -1; renderSettings(); renderTimer(); }
+  function beep(n) {
+    if (!audio) return;
+    for (let i = 0; i < n; i++) {
+      const o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime + i * 0.22;
+      o.frequency.value = 880; o.connect(g); g.connect(audio.destination);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+      o.start(t0); o.stop(t0 + 0.18);
+    }
+  }
+
+  const clampBean = (v) => Math.min(60, Math.max(5, Math.round(v * 2) / 2));
+  function commitBean() {
+    const v = parseFloat($("bean-in").value);
+    st.bean = Number.isFinite(v) ? clampBean(v) : st.bean;
+    $("bean-in").value = st.bean;
+    renderSettings(); renderTimer();
+  }
+  $("bean-in").addEventListener("input", () => {
+    const v = parseFloat($("bean-in").value);
+    if (Number.isFinite(v) && v >= 5 && v <= 60) { st.bean = v; $("water-out").innerHTML = `${water()} g<small>1:${RATIO}</small>`; renderTimer(); }
+  });
+  $("bean-in").addEventListener("change", commitBean);
+  $("bean-in").addEventListener("keydown", (e) => { if (e.key === "Enter") $("bean-in").blur(); });
+  $("bean-minus").onclick = () => { st.bean = clampBean(st.bean - 1); renderSettings(); renderTimer(); };
+  $("bean-plus").onclick = () => { st.bean = clampBean(st.bean + 1); renderSettings(); renderTimer(); };
+  const segHandler = (key, conv) => (e) => { const v = e.target.dataset?.v; if (v) { st[key] = conv(v); renderSettings(); renderTimer(); } };
+  $("method").onclick = segHandler("method", String);
+  $("taste").onclick = segHandler("taste", String);
+  $("strength").onclick = segHandler("strength", Number);
+  $("steep").onclick = segHandler("steep", Number);
+  $("start").onclick = () => st.running ? stop() : start();
+  $("reset").onclick = reset;
+  document.addEventListener("visibilitychange", async () => { if (st.running && document.visibilityState === "visible") { try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (e) {} } });
+
+  // ---- tabs ----
+  function showTab(name) {
+    $("tab-brew").setAttribute("aria-selected", name === "brew");
+    $("tab-log").setAttribute("aria-selected", name === "log");
+    $("view-brew").hidden = name !== "brew";
+    $("view-log").hidden = name !== "log";
+  }
+  $("tab-brew").onclick = () => showTab("brew");
+  $("tab-log").onclick = () => showTab("log");
+
+  // ---- stars ----
+  function renderStars() {
+    $("stars").innerHTML = [1, 2, 3, 4, 5].map(n => `<button type="button" data-n="${n}" class="${n <= st.rating ? "on" : ""}" aria-label="${n}つ星">★</button>`).join("");
+  }
+  $("stars").onclick = (e) => { const n = +e.target.dataset?.n; if (n) { st.rating = st.rating === n ? 0 : n; renderStars(); } };
+
+  // ---- records (db) ----
+  const KEY = "dailybrew.brews.v1";
+  let entries = [], pendingDelete = null;
+  function load() { try { const v = JSON.parse(localStorage.getItem(KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+  function persist() {
+    entries.sort((a, b) => (b.at || "").localeCompare(a.at || ""));
+    try { localStorage.setItem(KEY, JSON.stringify(entries)); return true; } catch (e) { return false; }
+  }
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function recipeText(e) {
+    const m = e.method || "46";
+    if (m === "46") return `${methodLabel[m]}（${tasteLabel[e.taste] || "標準"}・${strengthLabel[e.strength] || "標準"}）`;
+    if (m === "immersion") return `${methodLabel[m]}（${Math.round((e.steep || 240) / 60)}分）`;
+    return methodLabel[m];
+  }
+
+  function renderLog() {
+    if (!entries.length) { $("log").innerHTML = `<div class="empty">まだ記録がありません。<br>「淹れる」タブで一杯淹れたら、下のフォームから記録できます。</div>`; return; }
+    $("log").innerHTML = entries.map(e => {
+      const d = new Date(e.at);
+      const date = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      const confirm = pendingDelete === e.id;
+      return `<article class="entry">
+        <div class="top"><span class="bean">${esc(e.bean || "名前なしの豆")}</span><span class="date">${date}</span></div>
+        <div class="meta">${recipeText(e)} ・ ${esc(e.roast)} ・ ${e.beanG}g / ${e.waterG}g ・ ${e.temp ?? "-"}℃${e.grind ? " ・ " + esc(e.grind) : ""}</div>
+        ${e.rating ? `<div class="rate">${"★".repeat(e.rating)}</div>` : ""}
+        ${e.memo ? `<div class="memo">${esc(e.memo)}</div>` : ""}
+        <div class="acts">
+          <button class="link" data-reuse="${e.id}">この設定でもう一杯</button>
+          ${confirm ? `<button class="link danger" data-del-yes="${e.id}">本当に削除</button><button class="link quiet" data-del-no="1">やめる</button>`
+                    : `<button class="link quiet" data-del="${e.id}">削除</button>`}
+        </div>
+      </article>`;
+    }).join("");
+  }
+
+  $("log").onclick = async (ev) => {
+    const t = ev.target.dataset || {};
+    if (t.del) { pendingDelete = t.del; renderLog(); }
+    else if (t.delNo) { pendingDelete = null; renderLog(); }
+    else if (t.delYes) { pendingDelete = null; entries = entries.filter(x => x.id !== t.delYes); persist(); renderLog(); }
+    else if (t.reuse) { const e = entries.find(x => x.id === t.reuse); if (e) { applyEntry(e); reset(); showTab("brew"); window.scrollTo(0, 0); } }
+  };
+
+  function applyEntry(e) {
+    st.method = e.method || "46";
+    st.bean = e.beanG || st.bean; st.taste = e.taste || st.taste; st.strength = e.strength || st.strength; st.steep = e.steep || st.steep;
+    $("f-bean").value = e.bean || ""; $("f-roast").value = e.roast || "中煎り"; $("f-temp").value = e.temp ?? 92; $("f-grind").value = e.grind || "";
+    renderSettings(); renderTimer();
+  }
+  function alertLine(msg) { $("toast").textContent = msg; }
+
+  $("form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    commitBean();
+    const entry = {
+      at: new Date().toISOString(), method: st.method,
+      bean: $("f-bean").value.trim(), roast: $("f-roast").value,
+      temp: $("f-temp").value ? +$("f-temp").value : null, grind: $("f-grind").value.trim(),
+      beanG: st.bean, waterG: water(), ratio: RATIO,
+      rating: st.rating, memo: $("f-memo").value.trim()
+    };
+    if (st.method === "46") { entry.taste = st.taste; entry.strength = st.strength; }
+    if (st.method === "immersion") entry.steep = st.steep;
+    $("save").disabled = true;
+    entry.id = newId();
+    entries.push(entry);
+    if (persist()) {
+      alertLine("記録しました。「記録」タブで見られます。");
+      $("f-memo").value = ""; st.rating = 0; renderStars(); renderLog();
+    } else {
+      entries = entries.filter(x => x !== entry);
+      alertLine("保存できませんでした。プライベートブラウズ中だと保存できないことがあります。");
+    }
+    $("save").disabled = false;
+  });
+
+  renderSettings(); renderTimer(); renderStars(); renderLog();
+
+  entries = load(); persist(); renderLog();
+  if (entries.length) applyEntry(entries[0]);  // 前回の豆と設定を引き継ぐ
+  try { navigator.storage?.persist?.(); } catch (e) {}
+
+  // ---- backup ----
+  const backupLine = (m) => { $("backup-toast").textContent = m; };
+  $("export").onclick = () => {
+    const d = new Date(), pad = (n) => String(n).padStart(2, "0");
+    const name = `daily-brew-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+    const blob = new Blob([JSON.stringify({ app: "daily-brew", version: 1, exportedAt: d.toISOString(), brews: entries }, null, 2)], { type: "application/json" });
+    const file = new File([blob], name, { type: "application/json" });
+    if (navigator.canShare?.({ files: [file] })) {
+      navigator.share({ files: [file], title: name }).then(() => backupLine(`${entries.length}件を書き出しました。`)).catch(() => {});
+    } else {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      backupLine(`${entries.length}件を ${name} に書き出しました。`);
+    }
+  };
+  $("import-btn").onclick = () => $("import").click();
+  $("import").onchange = async () => {
+    const f = $("import").files[0]; $("import").value = "";
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const list = Array.isArray(data) ? data : data.brews;
+      if (!Array.isArray(list)) throw new Error("format");
+      const have = new Set(entries.map(e => e.id));
+      let added = 0;
+      for (const e of list) { if (e && e.at && !have.has(e.id)) { entries.push({ ...e, id: e.id || newId() }); added++; } }
+      persist(); renderLog();
+      backupLine(added ? `${added}件を読み込みました。` : "新しい記録はありませんでした。");
+    } catch (e) { backupLine("読み込めませんでした。Daily Brew で書き出したファイルを選んでください。"); }
+  };
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>

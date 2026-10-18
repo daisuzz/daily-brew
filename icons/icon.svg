@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0a8fd0"/>
+  <!-- dripper cone -->
+  <path d="M150 170 H362 L292 300 H220 Z" fill="#ffffff"/>
+  <!-- rim -->
+  <rect x="132" y="150" width="248" height="24" rx="12" fill="#ffffff"/>
+  <!-- ribs -->
+  <path d="M205 190 L240 280 M256 190 V280 M307 190 L272 280" stroke="#0a8fd0" stroke-width="7" stroke-linecap="round" opacity=".35"/>
+  <!-- base ring -->
+  <rect x="206" y="304" width="100" height="16" rx="8" fill="#ffffff"/>
+  <!-- drop -->
+  <path d="M256 338 C256 338 236 362 236 376 A20 20 0 0 0 276 376 C276 362 256 338 256 338 Z" fill="#ffffff"/>
+</svg>
