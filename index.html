@@ -40,8 +40,6 @@
 [hidden] { display: none !important; }
 html, body { margin: 0; }
 * { box-sizing: border-box; }
-.backup { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
-.backup .row { display: flex; gap: 10px; }
 body {
   background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -50,10 +48,7 @@ body {
 .wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 4px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
 h1 { font-size: 18px; margin: 0; font-weight: 500; letter-spacing: .12em; }
-.tabs { display: flex; gap: 18px; }
-.tabs button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; font-weight: 500; padding: 4px 0; cursor: pointer; border-bottom: 2px solid transparent; }
-.tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .panel { background: var(--surface); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 .label { font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
@@ -100,31 +95,6 @@ ol.steps li.active { background: var(--accent-soft); border-radius: 4px; border-
 ol.steps li.active .g, ol.steps li.active > span:nth-child(2) { color: var(--accent); font-weight: 700; }
 ol.steps li.active + li { border-top-color: transparent; }
 
-/* form */
-form { display: flex; flex-direction: column; gap: 12px; }
-input[type="text"], input.plain, textarea, select {
-  width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 9px 11px; }
-textarea { min-height: 64px; resize: vertical; }
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.stars { display: flex; gap: 4px; }
-.stars button { border: 0; background: transparent; font-size: 28px; line-height: 1; padding: 2px; cursor: pointer; color: var(--line); }
-.stars button.on { color: var(--accent); }
-.toast { font-size: 13px; color: var(--accent); min-height: 1.2em; margin: 0; }
-
-/* log */
-.log { display: flex; flex-direction: column; gap: 0; }
-.entry { padding: 14px 2px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
-.entry .top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-.entry .bean { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
-.entry .date { font-family: var(--font-num); font-size: 12px; color: var(--muted); white-space: nowrap; }
-.entry .meta { font-size: 12px; color: var(--muted); }
-.entry .memo { font-size: 14px; overflow-wrap: anywhere; }
-.entry .rate { color: var(--accent); letter-spacing: 2px; }
-.entry .acts { display: flex; gap: 8px; justify-content: flex-end; }
-.link { border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; padding: 4px; }
-.link.quiet { color: var(--muted); }
-.link.danger { color: #d0453a; font-weight: 700; }
-.empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1px dashed var(--line); border-radius: 6px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
 /* recipe picker */
@@ -154,10 +124,6 @@ textarea { min-height: 64px; resize: vertical; }
 <div class="wrap">
   <header>
     <h1>Daily Brew</h1>
-    <div class="tabs" role="tablist">
-      <button id="tab-brew" role="tab" aria-selected="true">淹れる</button>
-      <button id="tab-log" role="tab" aria-selected="false">記録</button>
-    </div>
   </header>
 
   <!-- 1. レシピを選ぶ -->
@@ -221,39 +187,6 @@ textarea { min-height: 64px; resize: vertical; }
       <ol class="steps" id="steps"></ol>
     </div>
 
-    <div class="panel" id="record-panel">
-      <span class="label">この一杯を記録</span>
-      <form id="form">
-        <div class="field"><label class="label" for="f-bean">豆の名前</label><input type="text" id="f-bean" placeholder="例：エチオピア イルガチェフェ"></div>
-        <div class="row2">
-          <div class="field"><label class="label" for="f-roast">焙煎</label>
-            <select id="f-roast"><option>浅煎り</option><option selected>中煎り</option><option>中深煎り</option><option>深煎り</option></select></div>
-          <div class="field"><label class="label" for="f-temp">湯温 ℃</label><input class="plain" type="number" id="f-temp" value="92" inputmode="numeric" min="60" max="100"></div>
-        </div>
-        <div class="field"><label class="label" for="f-grind">挽き目（ミルの目盛りなど）</label><input type="text" id="f-grind" placeholder="例：中細挽き / コマンダンテ 24クリック"></div>
-        <div class="field"><span class="label">おいしさ</span><div class="stars" id="stars"></div></div>
-        <div class="field"><label class="label" for="f-memo">メモ</label><textarea id="f-memo" placeholder="酸味が明るい、次はもう少し細かく など"></textarea></div>
-        <button class="btn primary" type="submit" id="save">記録する</button>
-        <p class="toast" id="toast" role="status"></p>
-      </form>
-    </div>
-  </section>
-
-  <!-- 3. 記録 -->
-  <section id="view-log" hidden>
-    <div class="log" id="log">
-      <div class="empty">まだ記録がありません。<br>「淹れる」でレシピを選んで一杯淹れたら、タイマーの下のフォームから記録できます。</div>
-    </div>
-    <div class="backup">
-      <span class="label">バックアップ</span>
-      <p class="hint">記録はこのスマホのブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておくと安心です。</p>
-      <div class="row">
-        <button class="btn" id="export">書き出す</button>
-        <button class="btn" id="import-btn">読み込む</button>
-        <input type="file" id="import" accept="application/json,.json" hidden>
-      </div>
-      <p class="toast" id="backup-toast" role="status"></p>
-    </div>
   </section>
 </div>
 
@@ -348,7 +281,7 @@ textarea { min-height: 64px; resize: vertical; }
     };
   }
 
-  const st = { serve: "hot", recipeId: null, bean: 20, running: false, startAt: 0, elapsed: 0, lastStep: -1, rating: 0 };
+  const st = { serve: "hot", recipeId: null, bean: 20, running: false, startAt: 0, elapsed: 0, lastStep: -1 };
   let raf = 0, audio = null, wakeLock = null;
   const recipe = () => RECIPES.find(r => r.id === st.recipeId) || RECIPES[0];
   const cur = () => variant(recipe(), st.serve);
@@ -396,10 +329,10 @@ textarea { min-height: 64px; resize: vertical; }
     openRecipe(b.dataset.id, st.serve);
   });
 
-  function openRecipe(id, serve, bean) {
+  function openRecipe(id, serve) {
     reset();
     st.recipeId = id; st.serve = serve;
-    st.bean = bean || cur().bean;
+    st.bean = cur().bean;
     showView("brew"); window.scrollTo(0, 0);
     renderRecipe(); renderSettings(); renderTimer();
   }
@@ -414,8 +347,6 @@ textarea { min-height: 64px; resize: vertical; }
     notes.push(v.tip);
     $("r-hint").textContent = notes.join(" ");
     $("r-source").innerHTML = v.source ? `出典：<a href="${v.source[1]}" target="_blank" rel="noopener">${esc(v.source[0])}</a>` : "";
-    const t = parseFloat((v.temp.match(/\d+(\.\d+)?/) || [])[0]);
-    if (t) $("f-temp").value = t;
   }
   $("back").onclick = () => { reset(); showView("pick"); renderPicker(); };
 
@@ -508,137 +439,12 @@ textarea { min-height: 64px; resize: vertical; }
 
   // ---- views ----
   function showView(name) {
-    const brewTab = name !== "log";
-    $("tab-brew").setAttribute("aria-selected", brewTab);
-    $("tab-log").setAttribute("aria-selected", !brewTab);
     $("view-pick").hidden = name !== "pick";
     $("view-brew").hidden = name !== "brew";
-    $("view-log").hidden = name !== "log";
   }
-  $("tab-brew").onclick = () => showView(st.recipeId ? "brew" : "pick");
-  $("tab-log").onclick = () => showView("log");
-
-  // ---- stars ----
-  function renderStars() {
-    $("stars").innerHTML = [1, 2, 3, 4, 5].map(n => `<button type="button" data-n="${n}" class="${n <= st.rating ? "on" : ""}" aria-label="${n}つ星">★</button>`).join("");
-  }
-  $("stars").onclick = (e) => { const n = +e.target.dataset?.n; if (n) { st.rating = st.rating === n ? 0 : n; renderStars(); } };
-
-  // ---- records (localStorage) ----
-  const KEY = "dailybrew.brews.v1";
-  let entries = [], pendingDelete = null;
-  function load() { try { const v = JSON.parse(localStorage.getItem(KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
-  function persist() {
-    entries.sort((a, b) => (b.at || "").localeCompare(a.at || ""));
-    try { localStorage.setItem(KEY, JSON.stringify(entries)); return true; } catch (e) { return false; }
-  }
-  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  // 旧バージョンの記録（method のみ）を定番レシピに対応づける
-  const legacyRecipe = { "46": "house-46", immersion: "house-immersion", hybrid: "house-hybrid" };
-  const entryRecipeId = (e) => e.recipeId || legacyRecipe[e.method] || "house-46";
-
-  function recipeText(e) {
-    const r = RECIPES.find(x => x.id === entryRecipeId(e));
-    const name = e.recipeName || (r ? (r.group === "shop" ? `${r.shop} ${r.name}` : r.name) : "");
-    return (e.serve === "iced" ? "アイス・" : "") + name;
-  }
-
-  function renderLog() {
-    if (!entries.length) { $("log").innerHTML = `<div class="empty">まだ記録がありません。<br>「淹れる」でレシピを選んで一杯淹れたら、タイマーの下のフォームから記録できます。</div>`; return; }
-    $("log").innerHTML = entries.map(e => {
-      const d = new Date(e.at);
-      const date = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-      const confirm = pendingDelete === e.id;
-      return `<article class="entry">
-        <div class="top"><span class="bean">${esc(e.bean || "名前なしの豆")}</span><span class="date">${date}</span></div>
-        <div class="meta">${esc(recipeText(e))} ・ ${esc(e.roast)} ・ ${e.beanG}g / ${e.waterG}g${e.iceG ? `＋氷${e.iceG}g` : ""} ・ ${e.temp ?? "-"}℃${e.grind ? " ・ " + esc(e.grind) : ""}</div>
-        ${e.rating ? `<div class="rate">${"★".repeat(e.rating)}</div>` : ""}
-        ${e.memo ? `<div class="memo">${esc(e.memo)}</div>` : ""}
-        <div class="acts">
-          <button class="link" data-reuse="${e.id}">この設定でもう一杯</button>
-          ${confirm ? `<button class="link danger" data-del-yes="${e.id}">本当に削除</button><button class="link quiet" data-del-no="1">やめる</button>`
-                    : `<button class="link quiet" data-del="${e.id}">削除</button>`}
-        </div>
-      </article>`;
-    }).join("");
-  }
-
-  $("log").onclick = (ev) => {
-    const t = ev.target.dataset || {};
-    if (t.del) { pendingDelete = t.del; renderLog(); }
-    else if (t.delNo) { pendingDelete = null; renderLog(); }
-    else if (t.delYes) { pendingDelete = null; entries = entries.filter(x => x.id !== t.delYes); persist(); renderLog(); }
-    else if (t.reuse) {
-      const e = entries.find(x => x.id === t.reuse);
-      if (e) {
-        openRecipe(entryRecipeId(e), e.serve === "iced" ? "iced" : "hot", e.beanG);
-        $("f-bean").value = e.bean || ""; $("f-roast").value = e.roast || "中煎り"; if (e.temp != null) $("f-temp").value = e.temp; $("f-grind").value = e.grind || "";
-      }
-    }
-  };
-
-  function alertLine(msg) { $("toast").textContent = msg; }
-  $("form").addEventListener("submit", (ev) => {
-    ev.preventDefault();
-    commitBean();
-    const r = recipe();
-    const entry = {
-      id: newId(), at: new Date().toISOString(),
-      recipeId: r.id, recipeName: r.group === "shop" ? `${r.shop} ${r.name}` : r.name, serve: st.serve,
-      bean: $("f-bean").value.trim(), roast: $("f-roast").value,
-      temp: $("f-temp").value ? +$("f-temp").value : null, grind: $("f-grind").value.trim(),
-      beanG: st.bean, waterG: hotWater(),
-      rating: st.rating, memo: $("f-memo").value.trim()
-    };
-    if (iced()) entry.iceG = iceG();
-    $("save").disabled = true;
-    entries.push(entry);
-    if (persist()) {
-      alertLine("記録しました。「記録」タブで見られます。");
-      $("f-memo").value = ""; st.rating = 0; renderStars(); renderLog();
-    } else {
-      entries = entries.filter(x => x !== entry);
-      alertLine("保存できませんでした。プライベートブラウズ中だと保存できないことがあります。");
-    }
-    $("save").disabled = false;
-  });
-
-  // ---- backup ----
-  const backupLine = (m) => { $("backup-toast").textContent = m; };
-  $("export").onclick = () => {
-    const d = new Date(), pad = (n) => String(n).padStart(2, "0");
-    const name = `daily-brew-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
-    const blob = new Blob([JSON.stringify({ app: "daily-brew", version: 1, exportedAt: d.toISOString(), brews: entries }, null, 2)], { type: "application/json" });
-    const file = new File([blob], name, { type: "application/json" });
-    if (navigator.canShare?.({ files: [file] })) {
-      navigator.share({ files: [file], title: name }).then(() => backupLine(`${entries.length}件を書き出しました。`)).catch(() => {});
-    } else {
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      backupLine(`${entries.length}件を ${name} に書き出しました。`);
-    }
-  };
-  $("import-btn").onclick = () => $("import").click();
-  $("import").onchange = async () => {
-    const f = $("import").files[0]; $("import").value = "";
-    if (!f) return;
-    try {
-      const data = JSON.parse(await f.text());
-      const list = Array.isArray(data) ? data : data.brews;
-      if (!Array.isArray(list)) throw new Error("format");
-      const have = new Set(entries.map(e => e.id));
-      let added = 0;
-      for (const e of list) { if (e && e.at && !have.has(e.id)) { entries.push({ ...e, id: e.id || newId() }); added++; } }
-      persist(); renderLog();
-      backupLine(added ? `${added}件を読み込みました。` : "新しい記録はありませんでした。");
-    } catch (e) { backupLine("読み込めませんでした。Daily Brew で書き出したファイルを選んでください。"); }
-  };
 
   // ---- boot ----
-  entries = load(); persist();
-  if (entries[0]?.serve === "iced") st.serve = "iced";  // 前回がアイスならアイスから選べるように
-  renderPicker(); renderStars(); renderLog();
-  try { navigator.storage?.persist?.(); } catch (e) {}
+  renderPicker();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 </script>
